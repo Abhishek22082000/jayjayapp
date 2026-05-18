@@ -49,6 +49,17 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     super.dispose();
   }
 
+  // Pop back to whatever opened the form (dashboard or grouped).
+  // Falls back to the dashboard if the form was reached via a direct
+  // deep link with no history to pop.
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
+
   void _hydrateFromExisting() {
     if (_loadedExisting || !widget.isEdit) return;
     final List<Tablet> all =
@@ -85,17 +96,17 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
       appBar: AppBarBrand(
         actions: <Widget>[
           TextButton.icon(
-            onPressed: () => context.go('/'),
+            onPressed: _goBack,
             icon: const Icon(Icons.arrow_back, size: 18),
             label: const Text('Back'),
           ),
         ],
         compactActions: <Widget>[
           IconButton(
-            tooltip: 'Back to dashboard',
+            tooltip: 'Back',
             icon: const Icon(Icons.arrow_back),
             color: AppColors.primaryDark,
-            onPressed: () => context.go('/'),
+            onPressed: _goBack,
           ),
         ],
       ),
@@ -212,7 +223,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
                     children: <Widget>[
                       const Spacer(),
                       OutlinedButton(
-                        onPressed: _saving ? null : () => context.go('/'),
+                        onPressed: _saving ? null : _goBack,
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 10),

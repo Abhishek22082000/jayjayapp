@@ -80,13 +80,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           OutlinedButton.icon(
             icon: const Icon(Icons.view_list_outlined, size: 18),
             label: const Text('By Tablet'),
-            onPressed: () => context.go('/grouped'),
+            onPressed: () => context.push('/grouped'),
           ),
           const SizedBox(width: 8),
           BrandGradientButton(
             label: 'Add',
             icon: Icons.add,
-            onPressed: () => context.go('/tablets/new'),
+            onPressed: () => context.push('/tablets/new'),
           ),
         ],
         compactActions: <Widget>[
@@ -94,7 +94,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             tooltip: 'By Tablet',
             icon: const Icon(Icons.view_list_outlined),
             color: AppColors.primaryDark,
-            onPressed: () => context.go('/grouped'),
+            onPressed: () => context.push('/grouped'),
           ),
           Container(
             decoration: BoxDecoration(
@@ -109,7 +109,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: IconButton(
               tooltip: 'Add',
               icon: const Icon(Icons.add, color: Colors.white),
-              onPressed: () => context.go('/tablets/new'),
+              onPressed: () => context.push('/tablets/new'),
             ),
           ),
         ],
@@ -139,7 +139,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 14),
                   ExpiringBanner(
                     items: expiring,
-                    onSeeByTablet: () => context.go('/grouped'),
+                    onSeeByTablet: () => context.push('/grouped'),
                   ),
                   if (expiring.isNotEmpty) const SizedBox(height: 14),
                   _filtersCard(),
@@ -356,7 +356,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               tablet: paged.pageItems[i],
               isWide: wide,
               onEdit: () =>
-                  context.go('/tablets/${paged.pageItems[i].id}/edit'),
+                  context.push('/tablets/${paged.pageItems[i].id}/edit'),
               onDelete: () => _confirmDelete(repo, paged.pageItems[i]),
             ),
           const SizedBox(height: 8),

@@ -53,7 +53,7 @@ class _GroupedScreenState extends ConsumerState<GroupedScreen> {
           BrandGradientButton(
             label: 'Add',
             icon: Icons.add,
-            onPressed: () => context.go('/tablets/new'),
+            onPressed: () => context.push('/tablets/new'),
           ),
         ],
         compactActions: <Widget>[
@@ -76,7 +76,7 @@ class _GroupedScreenState extends ConsumerState<GroupedScreen> {
             child: IconButton(
               tooltip: 'Add',
               icon: const Icon(Icons.add, color: Colors.white),
-              onPressed: () => context.go('/tablets/new'),
+              onPressed: () => context.push('/tablets/new'),
             ),
           ),
         ],
@@ -310,7 +310,7 @@ class _GroupRow extends StatelessWidget {
           child: IconButton(
             icon: const Icon(Icons.visibility_outlined, size: 18),
             tooltip: 'View on dashboard',
-            onPressed: () => context.go(
+            onPressed: () => context.push(
                 '/?tablet=${Uri.encodeQueryComponent(group.tabletName)}&mfr=${Uri.encodeQueryComponent(group.manufacturer)}'),
           ),
         ),
@@ -327,7 +327,7 @@ class _GroupRow extends StatelessWidget {
             Expanded(child: _nameCol()),
             IconButton(
               icon: const Icon(Icons.visibility_outlined, size: 18),
-              onPressed: () => context.go(
+              onPressed: () => context.push(
                   '/?tablet=${Uri.encodeQueryComponent(group.tabletName)}&mfr=${Uri.encodeQueryComponent(group.manufacturer)}'),
             ),
           ],

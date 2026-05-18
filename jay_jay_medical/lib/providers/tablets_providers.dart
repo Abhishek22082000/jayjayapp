@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/common_tablets.dart';
 import '../models/tablet.dart';
 import '../services/tablets_repository.dart';
 import '../utils/grouping.dart';
@@ -187,10 +188,17 @@ final autocompleteValuesProvider = Provider<AutocompleteSets>((Ref ref) {
     data: (List<Tablet> v) => v,
     orElse: () => const <Tablet>[],
   );
-  return AutocompleteSets(
-    all.map((Tablet t) => t.tabletName).where((String s) => s.isNotEmpty).toSet(),
-    all.map((Tablet t) => t.manufacturer).where((String s) => s.isNotEmpty).toSet(),
-  );
+  // Merge curated seed lists with whatever the user has already entered
+  // so suggestions work from day one on an empty database.
+  final Set<String> tabletNames = <String>{
+    ...kCommonTablets,
+    ...all.map((Tablet t) => t.tabletName).where((String s) => s.isNotEmpty),
+  };
+  final Set<String> manufacturers = <String>{
+    ...kCommonManufacturers,
+    ...all.map((Tablet t) => t.manufacturer).where((String s) => s.isNotEmpty),
+  };
+  return AutocompleteSets(tabletNames, manufacturers);
 });
 
 // ───── Grouped view ─────

@@ -89,16 +89,19 @@ class _TabletDataRowState extends State<TabletDataRow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(t.tabletName, style: AppTextStyles.bodyStrong),
-              Text(t.manufacturer, style: AppTextStyles.small),
+              SelectableText(t.tabletName, style: AppTextStyles.bodyStrong),
+              SelectableText(t.manufacturer, style: AppTextStyles.small),
             ],
           ),
         ),
-        Expanded(flex: 2, child: Text(t.clientName, style: AppTextStyles.body)),
+        Expanded(
+          flex: 2,
+          child: SelectableText(t.clientName, style: AppTextStyles.body),
+        ),
         Expanded(flex: 2, child: _batchChip(t.batchNumber)),
         SizedBox(
             width: 60,
-            child: Text('${t.quantity}',
+            child: SelectableText('${t.quantity}',
                 style: AppTextStyles.bodyStrong, textAlign: TextAlign.right)),
         const SizedBox(width: 12),
         Expanded(
@@ -107,9 +110,9 @@ class _TabletDataRowState extends State<TabletDataRow> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               if (t.manufacturingDate != null)
-                Text('Mfg ${formatDmy(t.manufacturingDate!)}',
+                SelectableText('Mfg ${formatDmy(t.manufacturingDate!)}',
                     style: AppTextStyles.small),
-              Text('Start ${formatDmy(t.startDate)}',
+              SelectableText('Start ${formatDmy(t.startDate)}',
                   style: AppTextStyles.small),
             ],
           ),
@@ -119,8 +122,8 @@ class _TabletDataRowState extends State<TabletDataRow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(formatDmy(t.endDate), style: AppTextStyles.bodyStrong),
-              Text(dueInDaysLabel(t.endDate),
+              SelectableText(formatDmy(t.endDate), style: AppTextStyles.bodyStrong),
+              SelectableText(dueInDaysLabel(t.endDate),
                   style: AppTextStyles.small.copyWith(
                     color: s == TabletStatus.expired
                         ? AppColors.dangerText
@@ -148,8 +151,8 @@ class _TabletDataRowState extends State<TabletDataRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(t.tabletName, style: AppTextStyles.bodyStrong),
-                  Text(t.manufacturer, style: AppTextStyles.small),
+                  SelectableText(t.tabletName, style: AppTextStyles.bodyStrong),
+                  SelectableText(t.manufacturer, style: AppTextStyles.small),
                 ],
               ),
             ),
@@ -187,13 +190,13 @@ class _TabletDataRowState extends State<TabletDataRow> {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text('#$batch', style: AppTextStyles.batchMono),
+      child: SelectableText('#$batch', style: AppTextStyles.batchMono),
     );
   }
 
   Widget _kv(String k, String v) {
-    return RichText(
-      text: TextSpan(
+    return SelectableText.rich(
+      TextSpan(
         style: AppTextStyles.small.copyWith(color: AppColors.textMuted),
         children: <InlineSpan>[
           TextSpan(text: '$k: '),
