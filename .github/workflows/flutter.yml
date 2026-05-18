@@ -96,6 +96,17 @@ jobs:
             echo "INTERNET permission already present, leaving manifest alone."
           fi
 
+      # Generate the Android launcher icon set from assets/logo.png.
+      # Skipped silently if the asset hasn't been committed yet — the
+      # build then falls back to the default Flutter "F" icon.
+      - name: Generate launcher icons
+        run: |
+          if [ -f assets/logo.png ]; then
+            flutter pub run flutter_launcher_icons
+          else
+            echo "assets/logo.png not present yet — skipping launcher icon generation."
+          fi
+
       - name: Build release APK
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}

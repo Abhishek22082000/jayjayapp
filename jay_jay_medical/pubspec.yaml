@@ -1,5 +1,5 @@
 name: jay_jay_medical
-description: JAY-JAY MEDICAL — Tablet Inventory. Track tablets purchased by clients, batches, expiry.
+description: JJ Medical — Tablet Inventory. Track tablets purchased by clients, batches, expiry.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -20,6 +20,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo.png
+
+# Run `flutter pub run flutter_launcher_icons` after dropping in a new
+# assets/logo.png to regenerate launcher icons across Android densities.
+# CI runs this automatically in .github/workflows/flutter.yml.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/logo.png"
+  remove_alpha_ios: false
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"
+  min_sdk_android: 21

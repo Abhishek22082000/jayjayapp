@@ -56,22 +56,34 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: <Color>[AppColors.primary, AppColors.primaryDark],
-                ),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: AppShadows.soft,
+            SizedBox(
+              width: 180,
+              height: 180,
+              child: Image.asset(
+                'assets/logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (BuildContext ctx, Object err, _) {
+                  // Fallback: gradient capsule if the asset is missing.
+                  return Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: <Color>[
+                          AppColors.primary,
+                          AppColors.primaryDark,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: AppShadows.soft,
+                    ),
+                    child: const Icon(Icons.medication_outlined,
+                        color: Colors.white, size: 44),
+                  );
+                },
               ),
-              child: const Icon(Icons.medication_outlined,
-                  color: Colors.white, size: 44),
             ),
-            const SizedBox(height: 18),
-            Text('JJ Medical', style: AppTextStyles.heading),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             Text('Tablet records & expiry', style: AppTextStyles.bodyMuted),
             const SizedBox(height: 28),
             const SizedBox(
