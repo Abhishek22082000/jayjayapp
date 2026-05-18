@@ -82,6 +82,20 @@ jobs:
               .
           fi
 
+      # The release manifest produced by `flutter create` has no INTERNET
+      # permission (debug builds get it via a separate debug manifest;
+      # release builds don't). Without this the APK can't reach the API.
+      - name: Ensure INTERNET permission in release manifest
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
+            echo "Added INTERNET permission:"
+            head -10 "$MANIFEST"
+          else
+            echo "INTERNET permission already present, leaving manifest alone."
+          fi
+
       - name: Build release APK
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
