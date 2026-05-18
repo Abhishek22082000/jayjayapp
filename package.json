@@ -1,0 +1,12 @@
+{
+  "name": "jay-jay-medical-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel serverless API for the JAY-JAY MEDICAL tablet inventory, backed by Upstash Redis.",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.28.4"
+  }
+}

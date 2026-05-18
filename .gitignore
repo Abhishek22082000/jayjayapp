@@ -1,0 +1,34 @@
+# Node / Vercel (api/ backend)
+node_modules/
+.vercel/
+.env
+.env.local
+
+# Flutter (jay_jay_medical/)
+jay_jay_medical/.dart_tool/
+jay_jay_medical/.flutter-plugins
+jay_jay_medical/.flutter-plugins-dependencies
+jay_jay_medical/.pub-cache/
+jay_jay_medical/.pub/
+jay_jay_medical/build/
+jay_jay_medical/.idea/
+jay_jay_medical/.vscode/
+jay_jay_medical/*.iml
+jay_jay_medical/ios/Pods/
+jay_jay_medical/ios/Flutter/Flutter.framework
+jay_jay_medical/ios/Flutter/Flutter.podspec
+jay_jay_medical/ios/Flutter/Generated.xcconfig
+jay_jay_medical/ios/Flutter/ephemeral/
+jay_jay_medical/ios/Flutter/flutter_export_environment.sh
+jay_jay_medical/android/.gradle/
+jay_jay_medical/android/captures/
+jay_jay_medical/android/gradlew
+jay_jay_medical/android/gradlew.bat
+jay_jay_medical/android/local.properties
+
+# Logs / OS / IDE
+*.log
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
