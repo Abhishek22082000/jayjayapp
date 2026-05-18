@@ -52,16 +52,29 @@ class TabletsRepository {
         .toList();
   }
 
+  // The Next.js API wraps single-tablet responses as { tablet: {...} }.
+  // List responses use { tablets: [...] }. Unwrap on POST/PUT.
+  Tablet _unwrapTablet(http.Response res, {required int expected}) {
+    if (res.statusCode != expected) {
+      throw ApiException(res.statusCode, res.body);
+    }
+    final Map<String, dynamic> body =
+        jsonDecode(res.body) as Map<String, dynamic>;
+    final Object? wrapped = body['tablet'];
+    if (wrapped is Map<String, dynamic>) {
+      return Tablet.fromJson(wrapped);
+    }
+    // Fall back to the raw body in case the shape ever flattens.
+    return Tablet.fromJson(body);
+  }
+
   Future<Tablet> add(Tablet t) async {
     final http.Response res = await _client.post(
       _u('/api/tablets'),
       headers: _headers(json: true),
       body: jsonEncode(t.toJsonPayload()),
     );
-    if (res.statusCode != 201) {
-      throw ApiException(res.statusCode, res.body);
-    }
-    return Tablet.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    return _unwrapTablet(res, expected: 201);
   }
 
   Future<Tablet> update(Tablet t) async {
@@ -70,10 +83,7 @@ class TabletsRepository {
       headers: _headers(json: true),
       body: jsonEncode(t.toJsonPayload()),
     );
-    if (res.statusCode != 200) {
-      throw ApiException(res.statusCode, res.body);
-    }
-    return Tablet.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    return _unwrapTablet(res, expected: 200);
   }
 
   Future<void> delete(String id) async {

@@ -1,9 +1,0 @@
-# Vercel cannot run PHP — exclude server files from the deploy so the
-# vercel.json rewrite can catch every non-API URL and show the landing page.
-*.php
-*.sql
-.git/
-.gitignore
-
-# Flutter project — not deployed to Vercel (built and shipped as a mobile app).
-jay_jay_medical/

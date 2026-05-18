@@ -1,26 +1,12 @@
-# JAY-JAY MEDICAL — Tablet Inventory (Flutter + Upstash Redis)
+# JAY-JAY MEDICAL — Tablet Inventory (Flutter)
 
 Mobile + tablet application for a medical shop to track tablets purchased by
 multiple clients, with batch numbers, quantities, manufacturers, and expiry
 dates. Highlights what is expiring within the next 7 days.
 
-The Flutter app talks to a small **Vercel serverless API** at `../api/`,
-which reads and writes an **Upstash Redis** database. The app does not
-contact Upstash directly — the REST token stays on Vercel.
-
-## Architecture
-
-```
- ┌────────────┐  HTTPS  ┌─────────────────────────┐  HTTPS  ┌──────────────┐
- │ Flutter    │────────▶│ Vercel API              │────────▶│ Upstash      │
- │ (this dir) │         │  /api/tablets           │         │ Redis        │
- └────────────┘         │  /api/tablets/[id]      │         └──────────────┘
-                        └─────────────────────────┘
-```
-
-- Polling refresh every 10 s + immediate refresh after every mutation.
-- Optional shared bearer token (`API_TOKEN`) gates the API.
-- No real-time stream, no per-user auth, single-trusted-user assumption.
+The app talks to the **existing `jayjaymedical` Next.js + Upstash deployment
+on Vercel** — see the top-level [README](../README.md) for the overall
+architecture. This document covers only the Flutter side.
 
 ## Features
 
@@ -38,62 +24,17 @@ contact Upstash directly — the REST token stays on Vercel.
 ## Prerequisites
 
 - [Flutter 3.x (stable channel)](https://docs.flutter.dev/get-started/install)
-- Node.js 18+ (for the API backend)
-- A Vercel project with the **Upstash for Redis** integration connected (it
-  auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`).
+- The `jayjaymedical` Vercel deployment running (Next.js API + Upstash KV).
 
-## One-time backend setup
-
-The backend lives at the **repo root**, not inside this folder. From the
-repo root:
-
-```bash
-npm install                  # installs @upstash/redis
-vercel link                  # one-time, links to your Vercel project
-vercel env pull .env.local   # optional, lets you run `vercel dev` locally
-```
-
-Connect the Upstash database to the project in the Vercel dashboard:
-**Storage → Upstash for Redis → Connect to Project**. That writes the
-`KV_REST_API_URL` and `KV_REST_API_TOKEN` env vars automatically.
-
-**Optional but recommended:** lock the API down by setting one more env var:
-
-```bash
-vercel env add API_TOKEN              # paste a random string (e.g. `openssl rand -hex 32`)
-```
-
-If `API_TOKEN` is set, every request to `/api/tablets*` must send
-`Authorization: Bearer <token>`. If it's unset, the API is open — fine for
-testing, **never** for a public URL.
-
-Deploy:
-
-```bash
-vercel --prod
-# → outputs https://<your-app>.vercel.app
-```
-
-Quick smoke test:
-```bash
-curl https://<your-app>.vercel.app/api/tablets \
-  -H "Authorization: Bearer <API_TOKEN>"   # → {"tablets":[]}
-```
-
-## Run the Flutter app
-
-From inside `jay_jay_medical/`:
+## Run
 
 ```bash
 flutter pub get
 flutter run \
-  --dart-define=API_BASE_URL=https://<your-app>.vercel.app \
-  --dart-define=API_TOKEN=<the-same-token-you-set-on-vercel>
+  --dart-define=API_BASE_URL=https://<your-medical-vercel-url>
 ```
 
-Omit `API_TOKEN` only if you also omitted it on Vercel.
-
-If `flutter create` needs to regenerate the native platform folders
+If `flutter create` needs to scaffold the native platform folders
 (android/, ios/), run it inside this directory once before `flutter run`:
 ```bash
 flutter create --org com.jayjaymedical --project-name jay_jay_medical .
@@ -113,16 +54,20 @@ Tests cover:
 - `grouping_test.dart` — two clients of the same tablet collapse into one
   group with summed quantities and a deduplicated client list.
 
-## API
+## API contract
 
-| Method | Path                  | Body                  | Returns                          |
-| ------ | --------------------- | --------------------- | -------------------------------- |
-| GET    | `/api/tablets`        |                       | `{ tablets: Tablet[] }`          |
-| POST   | `/api/tablets`        | Tablet (no `id`)      | `Tablet` (with `id` & timestamps), 201 |
-| PUT    | `/api/tablets/:id`    | Tablet (no `id`)      | `Tablet`, 200                    |
-| DELETE | `/api/tablets/:id`    |                       | 204                              |
+The Flutter HTTP client targets the `jayjaymedical` Next.js routes:
 
-A `Tablet` body looks like:
+| Method | Path                  | Returns                                  |
+| ------ | --------------------- | ---------------------------------------- |
+| GET    | `/api/tablets`        | `{ tablets: Tablet[] }`                  |
+| POST   | `/api/tablets`        | `{ tablet: Tablet }`, 201                |
+| GET    | `/api/tablets/:id`    | `{ tablet: Tablet }`, 200                |
+| PUT    | `/api/tablets/:id`    | `{ tablet: Tablet }`, 200                |
+| DELETE | `/api/tablets/:id`    | 204                                      |
+
+`Tablet` payload (dates are `YYYY-MM-DD` strings, matching the Next.js web
+form's `<input type="date">` output):
 ```json
 {
   "clientName": "Maria",
@@ -130,23 +75,15 @@ A `Tablet` body looks like:
   "manufacturer": "Acme",
   "batchNumber": "B0421",
   "quantity": 50,
-  "startDate": "2026-05-18T00:00:00.000Z",
-  "endDate": "2026-08-18T00:00:00.000Z",
-  "manufacturingDate": "2026-01-10T00:00:00.000Z"
+  "startDate": "2026-05-18",
+  "endDate": "2026-08-18",
+  "manufacturingDate": "2026-01-10"
 }
 ```
 
-Dates are ISO-8601 strings normalized to UTC midnight server-side.
-
-## Redis key layout
-
-```
-tablet:<uuid>     →  JSON-serialized Tablet (no `id` inside)
-tablets:index     →  SET of all uuids
-```
-
-Listing is `SMEMBERS tablets:index` followed by a single `MGET` of every
-document — efficient for the single-shop scale this app targets.
+The Flutter app pins date-only strings to **UTC midnight** when parsing,
+so calendar math (expiring / expired) is stable regardless of device
+timezone.
 
 ## Project layout
 
@@ -160,7 +97,7 @@ lib/
   models/
     tablet.dart             # Tablet model + JSON (de)serialization
   services/
-    tablets_repository.dart # HTTP client for the Vercel API
+    tablets_repository.dart # HTTP client for the Next.js API
   providers/
     filters_provider.dart
     tablets_providers.dart  # polling StreamProvider + derived selectors
@@ -170,40 +107,14 @@ lib/
     tablet_form_screen.dart
     grouped_screen.dart
   widgets/
-    app_bar_brand.dart
-    stat_card.dart
-    pill.dart
-    data_row.dart
-    expiring_banner.dart
-    filter_card.dart
-    pager.dart
-    empty_state.dart
+    app_bar_brand.dart, stat_card.dart, pill.dart, data_row.dart,
+    expiring_banner.dart, filter_card.dart, pager.dart, empty_state.dart,
     brand_gradient_button.dart
   utils/
-    date_utils.dart
-    status_utils.dart
-    grouping.dart
-    validators.dart
+    date_utils.dart, status_utils.dart, grouping.dart, validators.dart
 test/
-  status_utils_test.dart
-  date_utils_test.dart
-  validators_test.dart
+  status_utils_test.dart, date_utils_test.dart, validators_test.dart,
   grouping_test.dart
-```
-
-Backend (at the repo root, NOT in this folder):
-
-```
-api/
-  tablets.js                # GET (list) + POST (create)
-  tablets/[id].js           # GET (one) + PUT (update) + DELETE
-  _lib/
-    redis.js
-    auth.js
-    cors.js
-    tablet.js               # server-side validation + normalization
-package.json                # Node deps (@upstash/redis)
-vercel.json                 # rewrites /api/* through; everything else → landing page
 ```
 
 ## Screenshots
@@ -225,16 +136,6 @@ adb exec-out screencap -p > docs/dashboard-phone.png
 ```
 
 From the iOS simulator: `Cmd-S` (saves to ~/Desktop).
-
-## Scaling notes
-
-The dashboard, stats, grouped view, and autocomplete sets are all derived
-client-side from a single `tabletsStreamProvider` that polls
-`GET /api/tablets`. This is fine up to ~1000 documents. Beyond that:
-- Add server-side filtering (`/api/tablets?status=expiring&search=...`)
-  and pagination.
-- Replace polling with Server-Sent Events or a WebSocket if multi-device
-  sync becomes required.
 
 ## License
 

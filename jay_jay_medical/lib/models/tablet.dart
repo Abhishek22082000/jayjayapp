@@ -29,14 +29,6 @@ class Tablet {
   TabletStatus get status => statusFor(endDate);
 
   factory Tablet.fromJson(Map<String, dynamic> j) {
-    DateTime parseDate(Object? v) {
-      if (v is String && v.isNotEmpty) return DateTime.parse(v).toUtc();
-      return DateTime.utc(1970);
-    }
-    DateTime? parseDateOrNull(Object? v) {
-      if (v is String && v.isNotEmpty) return DateTime.parse(v).toUtc();
-      return null;
-    }
     return Tablet(
       id: (j['id'] as String?) ?? '',
       clientName: (j['clientName'] as String?) ?? '',
@@ -44,26 +36,32 @@ class Tablet {
       manufacturer: (j['manufacturer'] as String?) ?? '',
       batchNumber: (j['batchNumber'] as String?) ?? '',
       quantity: (j['quantity'] as num?)?.toInt() ?? 0,
-      startDate: parseDate(j['startDate']),
-      endDate: parseDate(j['endDate']),
-      manufacturingDate: parseDateOrNull(j['manufacturingDate']),
-      createdAt: parseDateOrNull(j['createdAt']),
+      startDate: _parseDate(j['startDate']) ?? DateTime.utc(1970),
+      endDate: _parseDate(j['endDate']) ?? DateTime.utc(1970),
+      manufacturingDate: _parseDate(j['manufacturingDate']),
+      createdAt: _parseDate(j['createdAt']),
     );
   }
 
   // Payload sent to the API on create/update.
+  // Dates are serialized as YYYY-MM-DD to match the Next.js web form's
+  // <input type="date"> output, so both clients write identical shapes.
   Map<String, dynamic> toJsonPayload() {
+    String ymd(DateTime d) {
+      final DateTime m = toUtcMidnight(d);
+      final String mm = m.month.toString().padLeft(2, '0');
+      final String dd = m.day.toString().padLeft(2, '0');
+      return '${m.year}-$mm-$dd';
+    }
     return <String, dynamic>{
       'clientName': clientName,
       'tabletName': tabletName,
       'manufacturer': manufacturer,
       'batchNumber': batchNumber,
       'quantity': quantity,
-      'startDate': toUtcMidnight(startDate).toIso8601String(),
-      'endDate': toUtcMidnight(endDate).toIso8601String(),
-      'manufacturingDate': manufacturingDate == null
-          ? null
-          : toUtcMidnight(manufacturingDate!).toIso8601String(),
+      'startDate': ymd(startDate),
+      'endDate': ymd(endDate),
+      'manufacturingDate': manufacturingDate == null ? null : ymd(manufacturingDate!),
     };
   }
 
@@ -94,4 +92,25 @@ class Tablet {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+}
+
+// Accepts:
+//   "YYYY-MM-DD"                       (Next.js web form output)
+//   "YYYY-MM-DDTHH:MM:SS[.sss][Z]"     (full ISO timestamps)
+//   null / empty                       → returns null
+// Date-only strings are pinned to UTC midnight so calendar math is stable
+// regardless of the device's local timezone.
+final RegExp _dateOnly = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+DateTime? _parseDate(Object? v) {
+  if (v is! String || v.isEmpty) return null;
+  if (_dateOnly.hasMatch(v)) {
+    final List<String> parts = v.split('-');
+    return DateTime.utc(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+    );
+  }
+  return DateTime.parse(v).toUtc();
 }

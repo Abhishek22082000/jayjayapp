@@ -1,119 +1,96 @@
-# JAY-JAY MEDICAL — Tablet Inventory
+# JAY-JAY MEDICAL — Tablet Inventory (Flutter)
 
 [![Flutter CI](https://github.com/Abhishek22082000/jayjayapp/actions/workflows/flutter.yml/badge.svg)](https://github.com/Abhishek22082000/jayjayapp/actions/workflows/flutter.yml)
 
-Flutter mobile app + Vercel serverless API + Upstash Redis. Tracks tablets
-purchased by clients, with batch numbers, quantities, manufacturers, and
-expiry dates. Highlights what is expiring within the next 7 days.
+Flutter mobile app for JAY-JAY MEDICAL. Tracks tablets purchased by clients,
+with batch numbers, quantities, manufacturers, and expiry dates. Highlights
+what is expiring within the next 7 days.
+
+This repo holds **only the Flutter client**. The backend it talks to lives
+in a separate Next.js + Upstash Redis project (the `jayjaymedical` repo,
+deployed to Vercel). One Upstash database backs both the Next.js web UI
+and this mobile app, so edits made in either client appear live in the
+other after the next poll.
 
 ## Repo layout
 
 ```
 .
-├── api/                  # Vercel serverless functions (Node 18, @upstash/redis)
-│   ├── tablets.js        #   GET /api/tablets, POST /api/tablets
-│   ├── tablets/[id].js   #   GET/PUT/DELETE /api/tablets/:id
-│   └── _lib/             #   shared helpers: Redis client, auth, CORS, validation
-├── jay_jay_medical/      # Flutter app (Android, iOS, responsive phone/tablet)
-├── package.json          # Node deps for api/ — Vercel installs these
-├── vercel.json           # routes /api/* through, everything else → landing page
-└── .vercelignore         # excludes jay_jay_medical/ from the Vercel deploy
+├── .github/workflows/flutter.yml   # CI: analyze, test, build Android APK
+└── jay_jay_medical/                # Flutter app
 ```
 
 ## Quick start
-
-### 1. Deploy the API to Vercel
-
-```bash
-npm install
-vercel link
-vercel --prod
-```
-
-Connect your Upstash for Redis database to the Vercel project — that
-auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Optionally set
-`API_TOKEN` on Vercel to gate every request with a shared bearer token.
-
-### 2. Run the Flutter app
 
 ```bash
 cd jay_jay_medical
 flutter pub get
 flutter run \
-  --dart-define=API_BASE_URL=https://<your-app>.vercel.app \
-  --dart-define=API_TOKEN=<same-token-if-you-set-one>
+  --dart-define=API_BASE_URL=https://<your-medical-vercel-url>
 ```
 
-Full Flutter docs (architecture, screens, tests, screenshot capture) live in
-[`jay_jay_medical/README.md`](jay_jay_medical/README.md).
+The `<your-medical-vercel-url>` is the URL of the `jayjaymedical` Vercel
+deployment (the Next.js project). The mobile app talks to its
+`/api/tablets` endpoints.
+
+Full Flutter docs live in [`jay_jay_medical/README.md`](jay_jay_medical/README.md).
 
 ## Architecture
 
 ```
- ┌────────────┐  HTTPS  ┌─────────────────────────┐  HTTPS  ┌──────────────┐
- │ Flutter    │────────▶│ Vercel API              │────────▶│ Upstash      │
- │ app        │         │  /api/tablets           │         │ Redis        │
- └────────────┘         │  /api/tablets/[id]      │         └──────────────┘
-                        └─────────────────────────┘
+ ┌────────────┐                       ┌────────────────────────┐
+ │ Flutter    │──────HTTPS──────────▶ │ jayjaymedical (Vercel) │
+ │ app (this  │   /api/tablets        │   Next.js + @upstash/  │
+ │ repo)      │                       │   redis                │
+ └────────────┘                       └─────────┬──────────────┘
+                                                │
+                                                ▼
+                                       ┌────────────────────┐
+                                       │ Upstash Redis      │
+                                       │ key: "tablets"     │
+                                       └────────▲───────────┘
+                                                │
+ ┌────────────┐                                 │
+ │ Next.js    │──────────HTTPS──────────────────┘
+ │ web UI     │
+ │ (same      │
+ │ Vercel)    │
+ └────────────┘
 ```
 
-- Polling refresh every 10 s + immediate refresh after every mutation.
-- Optional shared bearer token (`API_TOKEN`) gates the API.
-- Single-trusted-user assumption (shop owner). No per-user auth.
+- Flutter polls `GET /api/tablets` every 10 s and refreshes immediately
+  after every mutation.
+- Dates are serialized as `YYYY-MM-DD` strings on both sides so the
+  Next.js web form and the Flutter form write identical shapes.
+- No per-user auth. Single-trusted-user assumption (the shop owner).
 
-## Data model
+## CI
 
-```
-tablet:<uuid>     →  JSON-serialized Tablet (no `id` inside)
-tablets:index     →  SET of all uuids
-```
+[`.github/workflows/flutter.yml`](.github/workflows/flutter.yml) runs on
+every push and PR touching `jay_jay_medical/`:
 
-`Tablet` shape:
-```json
-{
-  "clientName": "Maria",
-  "tabletName": "Paracetamol",
-  "manufacturer": "Acme",
-  "batchNumber": "B0421",
-  "quantity": 50,
-  "startDate": "2026-05-18T00:00:00.000Z",
-  "endDate": "2026-08-18T00:00:00.000Z",
-  "manufacturingDate": "2026-01-10T00:00:00.000Z"
-}
-```
+1. **Analyze & Test** — `flutter analyze` + `flutter test` on Flutter
+   stable.
+2. **Build Android APK** — scaffolds `android/` on the fly, then runs
+   `flutter build apk --release`. APK uploaded as a GitHub Actions
+   artifact named `jayjay-medical-<sha>-apk` and retained for 30 days.
 
-## Continuous integration
+### Build-time secrets
 
-[`.github/workflows/flutter.yml`](.github/workflows/flutter.yml) runs on every
-push to `main`, every pull request, and on manual dispatch:
+Set on GitHub → **Settings → Secrets and variables → Actions**:
 
-1. **Analyze & Test** — `flutter analyze` + `flutter test` against the
-   stable Flutter channel on Ubuntu.
-2. **Build Android APK** — scaffolds `android/` on the fly (the folder is
-   intentionally kept out of git to keep the repo slim), then runs
-   `flutter build apk --release`. The resulting APK is uploaded as a
-   GitHub Actions artifact named `jayjay-medical-<commit-sha>-apk` and
-   retained for 30 days.
+| Secret | Required? | Value |
+| ------ | --------- | ----- |
+| `API_BASE_URL` | Yes (for a working APK) | Your `jayjaymedical` Vercel URL |
+| `API_TOKEN` | Only if you add bearer-token auth to the backend later | Matching shared secret |
 
-### Configure the build-time secrets (one-time)
+Re-run the latest workflow after adding secrets to get an APK that's
+wired up to production.
 
-The APK that CI builds needs to know which Vercel URL to talk to. On
-GitHub, go to **Settings → Secrets and variables → Actions → New repository
-secret** and add:
+### Downloading the APK
 
-| Secret name      | Value                                    |
-| ---------------- | ---------------------------------------- |
-| `API_BASE_URL`   | `https://<your-app>.vercel.app`          |
-| `API_TOKEN`      | The same shared secret you set on Vercel (optional — only if you also set `API_TOKEN` server-side) |
-
-After adding them, re-run the latest workflow (Actions → Flutter CI →
-Re-run all jobs) to produce an APK pointing at production.
-
-### Download the APK
-
-After a green CI run on `main`, open the run summary → **Artifacts** →
-download `jayjay-medical-<sha>-apk.zip`. Unzip and install on Android
-with `adb install app-release.apk`, or sideload via file manager.
+Actions → latest green run → **Artifacts** →
+`jayjay-medical-<sha>-apk.zip` → unzip → `adb install app-release.apk`.
 
 ## License
 

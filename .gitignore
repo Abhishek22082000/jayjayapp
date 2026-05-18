@@ -1,9 +1,3 @@
-# Node / Vercel (api/ backend)
-node_modules/
-.vercel/
-.env
-.env.local
-
 # Flutter (jay_jay_medical/)
 jay_jay_medical/.dart_tool/
 jay_jay_medical/.flutter-plugins
