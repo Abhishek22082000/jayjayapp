@@ -231,7 +231,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SizedBox(
               width: 220,
               child: DropdownButtonFormField<StatusFilter>(
-                value: f.status,
+                key: ValueKey<StatusFilter>(f.status),
+                initialValue: f.status,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: const <DropdownMenuItem<StatusFilter>>[
                   DropdownMenuItem<StatusFilter>(

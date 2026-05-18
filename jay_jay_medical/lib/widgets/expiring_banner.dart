@@ -36,7 +36,7 @@ class ExpiringBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${items.length} batches expiring within the next 7 days',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.warningText,
                     fontWeight: FontWeight.w700,
                     fontSize: 14.5,

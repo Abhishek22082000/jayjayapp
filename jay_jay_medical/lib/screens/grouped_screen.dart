@@ -112,7 +112,8 @@ class _GroupedScreenState extends ConsumerState<GroupedScreen> {
             SizedBox(
               width: 240,
               child: DropdownButtonFormField<GroupedFilter>(
-                value: gf.filter,
+                key: ValueKey<GroupedFilter>(gf.filter),
+                initialValue: gf.filter,
                 decoration: const InputDecoration(labelText: 'View'),
                 items: const <DropdownMenuItem<GroupedFilter>>[
                   DropdownMenuItem<GroupedFilter>(
