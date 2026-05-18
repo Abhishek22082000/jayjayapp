@@ -90,6 +90,14 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
             label: const Text('Back'),
           ),
         ],
+        compactActions: <Widget>[
+          IconButton(
+            tooltip: 'Back to dashboard',
+            icon: const Icon(Icons.arrow_back),
+            color: AppColors.primaryDark,
+            onPressed: () => context.go('/'),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,

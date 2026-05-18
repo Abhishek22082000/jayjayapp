@@ -15,7 +15,7 @@ class JayJayMedicalApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'JAY-JAY MEDICAL',
+      title: 'JJ Medical',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: buildRouter(),

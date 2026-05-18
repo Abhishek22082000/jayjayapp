@@ -56,6 +56,30 @@ class _GroupedScreenState extends ConsumerState<GroupedScreen> {
             onPressed: () => context.go('/tablets/new'),
           ),
         ],
+        compactActions: <Widget>[
+          IconButton(
+            tooltip: 'Dashboard',
+            icon: const Icon(Icons.dashboard_outlined),
+            color: AppColors.primaryDark,
+            onPressed: () => context.go('/'),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: <Color>[AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              boxShadow: AppShadows.soft,
+            ),
+            child: IconButton(
+              tooltip: 'Add',
+              icon: const Icon(Icons.add, color: Colors.white),
+              onPressed: () => context.go('/tablets/new'),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,

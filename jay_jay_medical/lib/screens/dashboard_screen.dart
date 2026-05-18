@@ -89,6 +89,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onPressed: () => context.go('/tablets/new'),
           ),
         ],
+        compactActions: <Widget>[
+          IconButton(
+            tooltip: 'By Tablet',
+            icon: const Icon(Icons.view_list_outlined),
+            color: AppColors.primaryDark,
+            onPressed: () => context.go('/grouped'),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: <Color>[AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              boxShadow: AppShadows.soft,
+            ),
+            child: IconButton(
+              tooltip: 'Add',
+              icon: const Icon(Icons.add, color: Colors.white),
+              onPressed: () => context.go('/tablets/new'),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,

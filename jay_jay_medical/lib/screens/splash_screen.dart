@@ -70,7 +70,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   color: Colors.white, size: 44),
             ),
             const SizedBox(height: 18),
-            Text('JAY-JAY MEDICAL', style: AppTextStyles.heading),
+            Text('JJ Medical', style: AppTextStyles.heading),
             const SizedBox(height: 4),
             Text('Tablet records & expiry', style: AppTextStyles.bodyMuted),
             const SizedBox(height: 28),
