@@ -92,6 +92,7 @@ jobs:
           set -e
           NDK_VERSION=26.3.11579264
           SDK=/usr/local/lib/android/sdk
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           if [ ! -d "$SDK/ndk/$NDK_VERSION" ]; then
             echo "Installing NDK $NDK_VERSION via sdkmanager..."
             yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
@@ -99,20 +100,45 @@ jobs:
           echo "Available NDKs:"
           ls "$SDK/ndk/"
 
-          GRADLE_KTS=android/app/build.gradle.kts
-          GRADLE_GROOVY=android/app/build.gradle
-          if [ -f "$GRADLE_KTS" ]; then
-            TARGET="$GRADLE_KTS"
-            sed -i "s|ndkVersion = flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" "$TARGET"
-          elif [ -f "$GRADLE_GROOVY" ]; then
-            TARGET="$GRADLE_GROOVY"
-            sed -i "s|ndkVersion flutter.ndkVersion|ndkVersion '$NDK_VERSION'|" "$TARGET"
+          if [ -f android/app/build.gradle.kts ]; then
+            TARGET=android/app/build.gradle.kts
+            KTS=1
+          elif [ -f android/app/build.gradle ]; then
+            TARGET=android/app/build.gradle
+            KTS=0
           else
             echo "No build.gradle(.kts) found — failing"
             exit 1
           fi
-          echo "ndkVersion line after patch:"
-          grep ndkVersion "$TARGET"
+
+          echo "=== $TARGET BEFORE PATCH ==="
+          cat -n "$TARGET"
+
+          # Replace ANY existing ndkVersion line with our pinned version.
+          if [ "$KTS" = "1" ]; then
+            sed -i 's|^[[:space:]]*ndkVersion.*$|    ndkVersion = "'"$NDK_VERSION"'"|' "$TARGET"
+          else
+            sed -i "s|^[[:space:]]*ndkVersion.*\$|    ndkVersion '$NDK_VERSION'|" "$TARGET"
+          fi
+
+          # If the scaffold didn't include an ndkVersion line at all, insert
+          # one right after compileSdk (which is always present in android {}).
+          if ! grep -q "$NDK_VERSION" "$TARGET"; then
+            if [ "$KTS" = "1" ]; then
+              sed -i 's|^\([[:space:]]*compileSdk[[:space:]]*=.*\)$|\1\n    ndkVersion = "'"$NDK_VERSION"'"|' "$TARGET"
+            else
+              sed -i "s|^\([[:space:]]*compileSdk[[:space:]].*\)\$|\1\n    ndkVersion '$NDK_VERSION'|" "$TARGET"
+            fi
+          fi
+
+          echo "=== $TARGET AFTER PATCH ==="
+          cat -n "$TARGET"
+
+          if ! grep -q "$NDK_VERSION" "$TARGET"; then
+            echo "ERROR: ndkVersion pin to $NDK_VERSION did not take effect"
+            exit 1
+          fi
+          echo "ndkVersion successfully pinned."
 
       # The release manifest produced by `flutter create` has no INTERNET
       # permission (debug builds get it via a separate debug manifest;
