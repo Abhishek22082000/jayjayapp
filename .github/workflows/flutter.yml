@@ -82,6 +82,38 @@ jobs:
               .
           fi
 
+      # flutter_zxing's vendored ZXing C++ uses std::char_traits<unsigned
+      # char>, an extension removed from libc++ starting in NDK 27. Pin
+      # to NDK 26.3 (last version with the old libc++) so the native
+      # build succeeds. Flutter's default ndkVersion follows the SDK and
+      # currently picks up NDK 28 on hosted runners.
+      - name: Install + pin NDK 26.3 for flutter_zxing C++ build
+        run: |
+          set -e
+          NDK_VERSION=26.3.11579264
+          SDK=/usr/local/lib/android/sdk
+          if [ ! -d "$SDK/ndk/$NDK_VERSION" ]; then
+            echo "Installing NDK $NDK_VERSION via sdkmanager..."
+            yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          fi
+          echo "Available NDKs:"
+          ls "$SDK/ndk/"
+
+          GRADLE_KTS=android/app/build.gradle.kts
+          GRADLE_GROOVY=android/app/build.gradle
+          if [ -f "$GRADLE_KTS" ]; then
+            TARGET="$GRADLE_KTS"
+            sed -i "s|ndkVersion = flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" "$TARGET"
+          elif [ -f "$GRADLE_GROOVY" ]; then
+            TARGET="$GRADLE_GROOVY"
+            sed -i "s|ndkVersion flutter.ndkVersion|ndkVersion '$NDK_VERSION'|" "$TARGET"
+          else
+            echo "No build.gradle(.kts) found — failing"
+            exit 1
+          fi
+          echo "ndkVersion line after patch:"
+          grep ndkVersion "$TARGET"
+
       # The release manifest produced by `flutter create` has no INTERNET
       # permission (debug builds get it via a separate debug manifest;
       # release builds don't). Without this the APK can't reach the API.
