@@ -52,6 +52,18 @@ class TabletsRepository {
         .toList();
   }
 
+  Future<Tablet?> fetchById(String id) async {
+    final http.Response res = await _client.get(
+      _u('/api/tablets/${Uri.encodeComponent(id)}'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 404) return null;
+    if (res.statusCode != 200) {
+      throw ApiException(res.statusCode, res.body);
+    }
+    return _unwrapTablet(res, expected: 200);
+  }
+
   // The Next.js API wraps single-tablet responses as { tablet: {...} }.
   // List responses use { tablets: [...] }. Unwrap on POST/PUT.
   Tablet _unwrapTablet(http.Response res, {required int expected}) {

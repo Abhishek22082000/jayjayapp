@@ -12,6 +12,7 @@ class Tablet {
   final DateTime endDate;
   final DateTime? manufacturingDate;
   final DateTime? createdAt;
+  final String? barcodeValue;
 
   const Tablet({
     required this.id,
@@ -24,6 +25,7 @@ class Tablet {
     required this.endDate,
     this.manufacturingDate,
     this.createdAt,
+    this.barcodeValue,
   });
 
   TabletStatus get status => statusFor(endDate);
@@ -40,6 +42,9 @@ class Tablet {
       endDate: _parseDate(j['endDate']) ?? DateTime.utc(1970),
       manufacturingDate: _parseDate(j['manufacturingDate']),
       createdAt: _parseDate(j['createdAt']),
+      barcodeValue: (j['barcodeValue'] as String?)?.trim().isEmpty == true
+          ? null
+          : (j['barcodeValue'] as String?),
     );
   }
 
@@ -62,6 +67,7 @@ class Tablet {
       'startDate': ymd(startDate),
       'endDate': ymd(endDate),
       'manufacturingDate': manufacturingDate == null ? null : ymd(manufacturingDate!),
+      'barcodeValue': barcodeValue,
     };
   }
 
@@ -77,6 +83,8 @@ class Tablet {
     DateTime? manufacturingDate,
     bool clearMfg = false,
     DateTime? createdAt,
+    String? barcodeValue,
+    bool clearBarcode = false,
   }) {
     return Tablet(
       id: id ?? this.id,
@@ -90,6 +98,7 @@ class Tablet {
       manufacturingDate:
           clearMfg ? null : (manufacturingDate ?? this.manufacturingDate),
       createdAt: createdAt ?? this.createdAt,
+      barcodeValue: clearBarcode ? null : (barcodeValue ?? this.barcodeValue),
     );
   }
 }

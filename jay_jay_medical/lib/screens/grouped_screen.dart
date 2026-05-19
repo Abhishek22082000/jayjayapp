@@ -311,7 +311,7 @@ class _GroupRow extends StatelessWidget {
             icon: const Icon(Icons.visibility_outlined, size: 18),
             tooltip: 'View on dashboard',
             onPressed: () => context.push(
-                '/?tablet=${Uri.encodeQueryComponent(group.tabletName)}&mfr=${Uri.encodeQueryComponent(group.manufacturer)}'),
+                '/tablets?tablet=${Uri.encodeQueryComponent(group.tabletName)}&mfr=${Uri.encodeQueryComponent(group.manufacturer)}'),
           ),
         ),
       ],

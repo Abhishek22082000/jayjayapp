@@ -162,6 +162,40 @@ final filteredTabletsProvider = Provider<PagedTablets>((Ref ref) {
   );
 });
 
+// Looks up a tablet by id from the in-memory polled list. Returns null if
+// the list hasn't loaded yet or the id is not present. Screens that need a
+// network-authoritative answer (e.g. deep-link to an id that was never in
+// the cached page) should call TabletsRepository.fetchById directly.
+final tabletByIdProvider = Provider.family<Tablet?, String>((Ref ref, String id) {
+  final AsyncValue<List<Tablet>> async = ref.watch(tabletsStreamProvider);
+  final List<Tablet> all = async.maybeWhen<List<Tablet>>(
+    data: (List<Tablet> v) => v,
+    orElse: () => const <Tablet>[],
+  );
+  for (final Tablet t in all) {
+    if (t.id == id) return t;
+  }
+  return null;
+});
+
+// Barcode lookup — searches the cached list. Trims and is case-sensitive
+// (barcode payloads are typically opaque numeric/alphanumeric strings that
+// users wouldn't manually paraphrase, so we do exact match).
+final tabletByBarcodeProvider =
+    Provider.family<Tablet?, String>((Ref ref, String code) {
+  final String needle = code.trim();
+  if (needle.isEmpty) return null;
+  final AsyncValue<List<Tablet>> async = ref.watch(tabletsStreamProvider);
+  final List<Tablet> all = async.maybeWhen<List<Tablet>>(
+    data: (List<Tablet> v) => v,
+    orElse: () => const <Tablet>[],
+  );
+  for (final Tablet t in all) {
+    if (t.barcodeValue != null && t.barcodeValue!.trim() == needle) return t;
+  }
+  return null;
+});
+
 final expiringSoonProvider = Provider<List<Tablet>>((Ref ref) {
   final AsyncValue<List<Tablet>> async = ref.watch(tabletsStreamProvider);
   final List<Tablet> all = async.maybeWhen<List<Tablet>>(
