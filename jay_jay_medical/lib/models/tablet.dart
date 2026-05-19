@@ -13,12 +13,9 @@ class Tablet {
   final DateTime? manufacturingDate;
   final DateTime? createdAt;
   final String? barcodeValue;
-  // SKU pack metadata. `quantity` above is always the total in individual
-  // tablets (base unit). These let the UI display "X strips · Y packets"
-  // and let the form's unit dropdown convert strips/packets → tablets.
-  // Either may be null on legacy records that pre-date this field.
-  final int? tabletsPerStrip;
-  final int? stripsPerPacket;
+  // What unit `quantity` is denominated in. One of 'tablet' | 'strip' |
+  // 'packet'. Legacy records that pre-date this field default to 'tablet'.
+  final String quantityUnit;
 
   const Tablet({
     required this.id,
@@ -32,8 +29,7 @@ class Tablet {
     this.manufacturingDate,
     this.createdAt,
     this.barcodeValue,
-    this.tabletsPerStrip,
-    this.stripsPerPacket,
+    this.quantityUnit = 'tablet',
   });
 
   TabletStatus get status => statusFor(endDate);
@@ -53,9 +49,13 @@ class Tablet {
       barcodeValue: (j['barcodeValue'] as String?)?.trim().isEmpty == true
           ? null
           : (j['barcodeValue'] as String?),
-      tabletsPerStrip: (j['tabletsPerStrip'] as num?)?.toInt(),
-      stripsPerPacket: (j['stripsPerPacket'] as num?)?.toInt(),
+      quantityUnit: _normalizeUnit(j['quantityUnit']),
     );
+  }
+
+  static String _normalizeUnit(Object? v) {
+    if (v is String && (v == 'tablet' || v == 'strip' || v == 'packet')) return v;
+    return 'tablet';
   }
 
   // Payload sent to the API on create/update.
@@ -78,8 +78,7 @@ class Tablet {
       'endDate': ymd(endDate),
       'manufacturingDate': manufacturingDate == null ? null : ymd(manufacturingDate!),
       'barcodeValue': barcodeValue,
-      'tabletsPerStrip': tabletsPerStrip,
-      'stripsPerPacket': stripsPerPacket,
+      'quantityUnit': quantityUnit,
     };
   }
 
@@ -97,8 +96,7 @@ class Tablet {
     DateTime? createdAt,
     String? barcodeValue,
     bool clearBarcode = false,
-    int? tabletsPerStrip,
-    int? stripsPerPacket,
+    String? quantityUnit,
   }) {
     return Tablet(
       id: id ?? this.id,
@@ -113,8 +111,7 @@ class Tablet {
           clearMfg ? null : (manufacturingDate ?? this.manufacturingDate),
       createdAt: createdAt ?? this.createdAt,
       barcodeValue: clearBarcode ? null : (barcodeValue ?? this.barcodeValue),
-      tabletsPerStrip: tabletsPerStrip ?? this.tabletsPerStrip,
-      stripsPerPacket: stripsPerPacket ?? this.stripsPerPacket,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
     );
   }
 }
