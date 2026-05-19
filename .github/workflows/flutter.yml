@@ -85,44 +85,25 @@ jobs:
       # The release manifest produced by `flutter create` has no INTERNET
       # permission (debug builds get it via a separate debug manifest;
       # release builds don't). Without this the APK can't reach the API.
-      - name: Ensure INTERNET permission in release manifest
+      # CAMERA is needed by the flutter_zxing barcode scanner — its plugin
+      # manifest also declares it, but inserting here is defensive and
+      # makes the requirement obvious in the app manifest itself.
+      - name: Ensure INTERNET + CAMERA permissions in release manifest
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' "$MANIFEST"
-            echo "Added INTERNET permission:"
-            head -10 "$MANIFEST"
+            echo "Added INTERNET permission."
           else
-            echo "INTERNET permission already present, leaving manifest alone."
+            echo "INTERNET permission already present."
           fi
-
-      # mobile_scanner v5 defaults to the unbundled MLKit barcode model,
-      # which Play Services downloads on first use. On devices without
-      # Play Services (emulators, some OEM ROMs) or before the model has
-      # finished downloading, the scanner throws a null-object reference
-      # crash. Force the bundled model so the barcode classifier ships
-      # inside the APK and works the moment the app launches.
-      - name: Bundle MLKit barcode scanner into APK
-        run: |
-          GRADLE_KTS=android/app/build.gradle.kts
-          GRADLE_GROOVY=android/app/build.gradle
-          if [ -f "$GRADLE_KTS" ]; then
-            TARGET="$GRADLE_KTS"
-            DEP='implementation("com.google.mlkit:barcode-scanning:17.2.0")'
-          elif [ -f "$GRADLE_GROOVY" ]; then
-            TARGET="$GRADLE_GROOVY"
-            DEP="implementation 'com.google.mlkit:barcode-scanning:17.2.0'"
+          if ! grep -q 'android.permission.CAMERA' "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA"/>\n    <application|' "$MANIFEST"
+            echo "Added CAMERA permission."
           else
-            echo "No android/app/build.gradle(.kts) found — failing"
-            exit 1
+            echo "CAMERA permission already present."
           fi
-          if grep -q 'mlkit:barcode-scanning' "$TARGET"; then
-            echo "Bundled MLKit barcode dep already present in $TARGET"
-          else
-            printf '\ndependencies {\n    %s\n}\n' "$DEP" >> "$TARGET"
-            echo "Appended bundled MLKit barcode dep to $TARGET:"
-            tail -5 "$TARGET"
-          fi
+          head -15 "$MANIFEST"
 
       # Generate the Android launcher icon set from assets/logo.png.
       # Skipped silently if the asset hasn't been committed yet — the
