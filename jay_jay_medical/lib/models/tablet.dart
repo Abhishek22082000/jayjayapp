@@ -11,6 +11,7 @@ class Tablet {
   final DateTime startDate;
   final DateTime endDate;
   final DateTime? manufacturingDate;
+  final String? barcodeValue;
   final DateTime? createdAt;
 
   const Tablet({
@@ -23,6 +24,7 @@ class Tablet {
     required this.startDate,
     required this.endDate,
     this.manufacturingDate,
+    this.barcodeValue,
     this.createdAt,
   });
 
@@ -39,6 +41,7 @@ class Tablet {
       startDate: _parseDate(j['startDate']) ?? DateTime.utc(1970),
       endDate: _parseDate(j['endDate']) ?? DateTime.utc(1970),
       manufacturingDate: _parseDate(j['manufacturingDate']),
+      barcodeValue: _trimmedOrNull(j['barcodeValue']),
       createdAt: _parseDate(j['createdAt']),
     );
   }
@@ -62,6 +65,7 @@ class Tablet {
       'startDate': ymd(startDate),
       'endDate': ymd(endDate),
       'manufacturingDate': manufacturingDate == null ? null : ymd(manufacturingDate!),
+      'barcodeValue': barcodeValue,
     };
   }
 
@@ -76,6 +80,8 @@ class Tablet {
     DateTime? endDate,
     DateTime? manufacturingDate,
     bool clearMfg = false,
+    String? barcodeValue,
+    bool clearBarcode = false,
     DateTime? createdAt,
   }) {
     return Tablet(
@@ -89,9 +95,17 @@ class Tablet {
       endDate: endDate ?? this.endDate,
       manufacturingDate:
           clearMfg ? null : (manufacturingDate ?? this.manufacturingDate),
+      barcodeValue:
+          clearBarcode ? null : (barcodeValue ?? this.barcodeValue),
       createdAt: createdAt ?? this.createdAt,
     );
   }
+}
+
+String? _trimmedOrNull(Object? v) {
+  if (v is! String) return null;
+  final String s = v.trim();
+  return s.isEmpty ? null : s;
 }
 
 // Accepts:

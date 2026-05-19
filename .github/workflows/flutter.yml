@@ -96,6 +96,20 @@ jobs:
             echo "INTERNET permission already present, leaving manifest alone."
           fi
 
+      # qr_code_scanner needs the camera at runtime. Android also needs the
+      # CAMERA permission declared in the release manifest (debug builds
+      # inherit it from a separate debug manifest).
+      - name: Ensure CAMERA permission in release manifest
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q 'android.permission.CAMERA' "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA"/>\n    <application|' "$MANIFEST"
+            echo "Added CAMERA permission:"
+            head -10 "$MANIFEST"
+          else
+            echo "CAMERA permission already present, leaving manifest alone."
+          fi
+
       # Generate the Android launcher icon set from assets/logo.png.
       # Skipped silently if the asset hasn't been committed yet — the
       # build then falls back to the default Flutter "F" icon.

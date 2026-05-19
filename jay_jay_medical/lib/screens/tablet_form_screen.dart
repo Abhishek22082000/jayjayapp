@@ -27,6 +27,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
   final TextEditingController _batchCtrl = TextEditingController();
   final TextEditingController _quantityCtrl = TextEditingController();
   final TextEditingController _clientCtrl = TextEditingController();
+  final TextEditingController _barcodeCtrl = TextEditingController();
   final FocusNode _tabletFocus = FocusNode();
   final FocusNode _manufacturerFocus = FocusNode();
 
@@ -44,6 +45,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     _batchCtrl.dispose();
     _quantityCtrl.dispose();
     _clientCtrl.dispose();
+    _barcodeCtrl.dispose();
     _tabletFocus.dispose();
     _manufacturerFocus.dispose();
     super.dispose();
@@ -80,6 +82,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     _batchCtrl.text = t.batchNumber;
     _quantityCtrl.text = '${t.quantity}';
     _clientCtrl.text = t.clientName;
+    _barcodeCtrl.text = t.barcodeValue ?? '';
     _startDate = t.startDate;
     _endDate = t.endDate;
     _mfgDate = t.manufacturingDate;
@@ -163,6 +166,18 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                         ],
                         validator: intMin1,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _barcodeCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Barcode / QR value (optional)',
+                          suffixIcon: IconButton(
+                            tooltip: 'Scan to fill',
+                            icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            onPressed: _scanIntoBarcodeField,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -361,6 +376,14 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     );
   }
 
+  Future<void> _scanIntoBarcodeField() async {
+    final Object? result = await context.push<Object?>('/scan?return=form');
+    if (!mounted) return;
+    if (result is String && result.trim().isNotEmpty) {
+      setState(() => _barcodeCtrl.text = result.trim());
+    }
+  }
+
   Future<void> _onSave() async {
     setState(() => _crossFieldError = null);
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -387,6 +410,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     setState(() => _saving = true);
     try {
       final repo = ref.read(tabletsRepositoryProvider);
+      final String barcode = _barcodeCtrl.text.trim();
       final Tablet t = Tablet(
         id: widget.editId ?? '',
         tabletName: _tabletCtrl.text.trim(),
@@ -397,6 +421,7 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
         startDate: _startDate!,
         endDate: _endDate!,
         manufacturingDate: _mfgDate,
+        barcodeValue: barcode.isEmpty ? null : barcode,
       );
       if (widget.isEdit) {
         await repo.update(t);

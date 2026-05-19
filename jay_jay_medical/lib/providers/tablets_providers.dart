@@ -110,7 +110,8 @@ bool _matchesSearch(Tablet t, String q) {
   return t.tabletName.toLowerCase().contains(n) ||
       t.clientName.toLowerCase().contains(n) ||
       t.batchNumber.toLowerCase().contains(n) ||
-      t.manufacturer.toLowerCase().contains(n);
+      t.manufacturer.toLowerCase().contains(n) ||
+      (t.barcodeValue?.toLowerCase().contains(n) ?? false);
 }
 
 final filteredTabletsProvider = Provider<PagedTablets>((Ref ref) {

@@ -12,6 +12,7 @@ class StatCard extends StatelessWidget {
     this.subtitle,
     required this.icon,
     required this.tone,
+    this.onTap,
   });
 
   final String label;
@@ -19,6 +20,7 @@ class StatCard extends StatelessWidget {
   final String? subtitle;
   final IconData icon;
   final StatTone tone;
+  final VoidCallback? onTap;
 
   ({Color accent, Color chipBg, Color chipFg}) get _p {
     switch (tone) {
@@ -52,63 +54,77 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = _p;
+    const BorderRadius radius = BorderRadius.all(AppRadius.cardR);
+    final Widget inner = IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Container(
+            width: 5,
+            decoration: BoxDecoration(
+              color: p.accent,
+              borderRadius: const BorderRadius.only(
+                topLeft: AppRadius.cardR,
+                bottomLeft: AppRadius.cardR,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: p.chipBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(icon, color: p.chipFg, size: 20),
+                      ),
+                      const Spacer(),
+                      if (onTap != null)
+                        Icon(Icons.chevron_right, color: p.chipFg, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(value, style: AppTextStyles.statNumber),
+                  const SizedBox(height: 4),
+                  Text(label.toUpperCase(),
+                      style: AppTextStyles.sectionLabel),
+                  if (subtitle != null) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Text(subtitle!, style: AppTextStyles.small),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderRadius: radius,
         border: Border.all(color: AppColors.border),
         boxShadow: AppShadows.soft,
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Container(
-              width: 5,
-              decoration: BoxDecoration(
-                color: p.accent,
-                borderRadius: const BorderRadius.only(
-                  topLeft: AppRadius.cardR,
-                  bottomLeft: AppRadius.cardR,
-                ),
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null
+          ? inner
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: radius,
+                child: inner,
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: p.chipBg,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(icon, color: p.chipFg, size: 20),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(value, style: AppTextStyles.statNumber),
-                    const SizedBox(height: 4),
-                    Text(label.toUpperCase(),
-                        style: AppTextStyles.sectionLabel),
-                    if (subtitle != null) ...<Widget>[
-                      const SizedBox(height: 4),
-                      Text(subtitle!, style: AppTextStyles.small),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
