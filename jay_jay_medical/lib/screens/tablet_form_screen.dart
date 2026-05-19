@@ -155,6 +155,17 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     return '$total tablets';
   }
 
+  String _quantityLabel() {
+    switch (_quantityUnit) {
+      case QuantityUnit.tablet:
+        return 'Number of tablets';
+      case QuantityUnit.strip:
+        return 'Number of strips';
+      case QuantityUnit.packet:
+        return 'Number of packets';
+    }
+  }
+
   Future<void> _scanBarcodeIntoField() async {
     final String? code = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
@@ -268,49 +279,39 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            child: TextFormField(
-                              controller: _quantityCtrl,
-                              decoration:
-                                  const InputDecoration(labelText: 'Quantity'),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              validator: intMin1,
-                              onChanged: (_) => setState(() {}),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width: 140,
-                            child: DropdownButtonFormField<QuantityUnit>(
-                              key: ValueKey<QuantityUnit>(_quantityUnit),
-                              initialValue: _quantityUnit,
-                              decoration:
-                                  const InputDecoration(labelText: 'Unit'),
-                              items: const <DropdownMenuItem<QuantityUnit>>[
-                                DropdownMenuItem<QuantityUnit>(
-                                    value: QuantityUnit.tablet,
-                                    child: Text('Tablet')),
-                                DropdownMenuItem<QuantityUnit>(
-                                    value: QuantityUnit.strip,
-                                    child: Text('Strip')),
-                                DropdownMenuItem<QuantityUnit>(
-                                    value: QuantityUnit.packet,
-                                    child: Text('Packet')),
-                              ],
-                              onChanged: (QuantityUnit? v) {
-                                if (v != null) {
-                                  setState(() => _quantityUnit = v);
-                                }
-                              },
-                            ),
-                          ),
+                      Text('UNIT', style: AppTextStyles.sectionLabel),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<QuantityUnit>(
+                          showSelectedIcon: false,
+                          segments: const <ButtonSegment<QuantityUnit>>[
+                            ButtonSegment<QuantityUnit>(
+                                value: QuantityUnit.tablet,
+                                label: Text('Tablet')),
+                            ButtonSegment<QuantityUnit>(
+                                value: QuantityUnit.strip,
+                                label: Text('Strip')),
+                            ButtonSegment<QuantityUnit>(
+                                value: QuantityUnit.packet,
+                                label: Text('Packet')),
+                          ],
+                          selected: <QuantityUnit>{_quantityUnit},
+                          onSelectionChanged: (Set<QuantityUnit> s) {
+                            setState(() => _quantityUnit = s.first);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _quantityCtrl,
+                        decoration: InputDecoration(labelText: _quantityLabel()),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
+                        validator: intMin1,
+                        onChanged: (_) => setState(() {}),
                       ),
                       if (_quantityPreview() != null) ...<Widget>[
                         const SizedBox(height: 6),
