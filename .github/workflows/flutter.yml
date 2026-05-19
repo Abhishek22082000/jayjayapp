@@ -138,7 +138,56 @@ jobs:
             echo "ERROR: ndkVersion pin to $NDK_VERSION did not take effect"
             exit 1
           fi
-          echo "ndkVersion successfully pinned."
+          echo "App-level ndkVersion successfully pinned."
+
+          # Each Flutter plugin module has its own android/build.gradle and
+          # the app-level ndkVersion DOES NOT propagate to plugin modules.
+          # flutter_zxing's own gradle picks the AGP default (currently
+          # NDK 28 on ubuntu-latest) — which is the very NDK that breaks
+          # its native build. Patch the plugin's gradle in pub cache so
+          # its CMake runs against NDK 26 too.
+          PLUGIN_DIR=$(find ~/.pub-cache/hosted/pub.dev -maxdepth 1 -name 'flutter_zxing-*' -type d | head -1)
+          if [ -z "$PLUGIN_DIR" ]; then
+            echo "ERROR: flutter_zxing not found in pub cache"
+            exit 1
+          fi
+          echo "flutter_zxing pub cache path: $PLUGIN_DIR"
+          if [ -f "$PLUGIN_DIR/android/build.gradle.kts" ]; then
+            PT="$PLUGIN_DIR/android/build.gradle.kts"
+            PKTS=1
+          elif [ -f "$PLUGIN_DIR/android/build.gradle" ]; then
+            PT="$PLUGIN_DIR/android/build.gradle"
+            PKTS=0
+          else
+            echo "ERROR: plugin build.gradle(.kts) not found"
+            exit 1
+          fi
+
+          echo "=== $PT BEFORE PATCH ==="
+          cat -n "$PT"
+
+          if [ "$PKTS" = "1" ]; then
+            if grep -q "ndkVersion" "$PT"; then
+              sed -i 's|^[[:space:]]*ndkVersion.*$|    ndkVersion = "'"$NDK_VERSION"'"|' "$PT"
+            else
+              sed -i 's|^\([[:space:]]*compileSdk[[:space:]]*=.*\)$|\1\n    ndkVersion = "'"$NDK_VERSION"'"|' "$PT"
+            fi
+          else
+            if grep -q "ndkVersion" "$PT"; then
+              sed -i "s|^[[:space:]]*ndkVersion.*\$|    ndkVersion '$NDK_VERSION'|" "$PT"
+            else
+              sed -i "s|^\([[:space:]]*compileSdk[[:space:]].*\)\$|\1\n    ndkVersion '$NDK_VERSION'|" "$PT"
+            fi
+          fi
+
+          echo "=== $PT AFTER PATCH ==="
+          cat -n "$PT"
+
+          if ! grep -q "$NDK_VERSION" "$PT"; then
+            echo "ERROR: plugin-level ndkVersion pin failed"
+            exit 1
+          fi
+          echo "flutter_zxing plugin pinned to NDK $NDK_VERSION."
 
       # The release manifest produced by `flutter create` has no INTERNET
       # permission (debug builds get it via a separate debug manifest;
