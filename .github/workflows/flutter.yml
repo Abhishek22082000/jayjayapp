@@ -106,36 +106,22 @@ jobs:
         run: |
           GRADLE_KTS=android/app/build.gradle.kts
           GRADLE_GROOVY=android/app/build.gradle
-          BUNDLED_DEP_KTS='implementation("com.google.mlkit:barcode-scanning:17.2.0")'
-          BUNDLED_DEP_GROOVY="implementation 'com.google.mlkit:barcode-scanning:17.2.0'"
-
           if [ -f "$GRADLE_KTS" ]; then
-            if grep -q 'mlkit:barcode-scanning' "$GRADLE_KTS"; then
-              echo "Bundled MLKit barcode dep already present in build.gradle.kts"
-            else
-              cat >> "$GRADLE_KTS" <<EOF
-
-dependencies {
-    $BUNDLED_DEP_KTS
-}
-EOF
-              echo "Appended bundled MLKit barcode dep to build.gradle.kts"
-            fi
+            TARGET="$GRADLE_KTS"
+            DEP='implementation("com.google.mlkit:barcode-scanning:17.2.0")'
           elif [ -f "$GRADLE_GROOVY" ]; then
-            if grep -q 'mlkit:barcode-scanning' "$GRADLE_GROOVY"; then
-              echo "Bundled MLKit barcode dep already present in build.gradle"
-            else
-              cat >> "$GRADLE_GROOVY" <<EOF
-
-dependencies {
-    $BUNDLED_DEP_GROOVY
-}
-EOF
-              echo "Appended bundled MLKit barcode dep to build.gradle"
-            fi
+            TARGET="$GRADLE_GROOVY"
+            DEP="implementation 'com.google.mlkit:barcode-scanning:17.2.0'"
           else
-            echo "No android/app/build.gradle(.kts) found — skipping MLKit bundling"
+            echo "No android/app/build.gradle(.kts) found — failing"
             exit 1
+          fi
+          if grep -q 'mlkit:barcode-scanning' "$TARGET"; then
+            echo "Bundled MLKit barcode dep already present in $TARGET"
+          else
+            printf '\ndependencies {\n    %s\n}\n' "$DEP" >> "$TARGET"
+            echo "Appended bundled MLKit barcode dep to $TARGET:"
+            tail -5 "$TARGET"
           fi
 
       # Generate the Android launcher icon set from assets/logo.png.
