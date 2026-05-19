@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../app/theme.dart';
 import '../models/tablet.dart';
 import '../providers/tablets_providers.dart';
-import '../services/tablets_repository.dart';
 import '../utils/date_utils.dart';
 import '../utils/status_utils.dart';
 import '../widgets/app_bar_brand.dart';

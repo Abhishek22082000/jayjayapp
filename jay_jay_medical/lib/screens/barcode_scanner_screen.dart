@@ -136,7 +136,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Text(
