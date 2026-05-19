@@ -24,6 +24,8 @@ class TabletFormScreen extends ConsumerStatefulWidget {
   ConsumerState<TabletFormScreen> createState() => _TabletFormScreenState();
 }
 
+enum QuantityUnit { tablet, strip, packet }
+
 class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _tabletCtrl = TextEditingController();
@@ -32,8 +34,14 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
   final TextEditingController _quantityCtrl = TextEditingController();
   final TextEditingController _clientCtrl = TextEditingController();
   final TextEditingController _barcodeCtrl = TextEditingController();
+  final TextEditingController _tabletsPerStripCtrl = TextEditingController();
+  final TextEditingController _stripsPerPacketCtrl = TextEditingController();
   final FocusNode _tabletFocus = FocusNode();
   final FocusNode _manufacturerFocus = FocusNode();
+
+  // What unit the user is entering Quantity in. On save we always convert
+  // back to individual tablets (the base unit `Tablet.quantity`).
+  QuantityUnit _quantityUnit = QuantityUnit.tablet;
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -60,6 +68,8 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     _quantityCtrl.dispose();
     _clientCtrl.dispose();
     _barcodeCtrl.dispose();
+    _tabletsPerStripCtrl.dispose();
+    _stripsPerPacketCtrl.dispose();
     _tabletFocus.dispose();
     _manufacturerFocus.dispose();
     super.dispose();
@@ -97,10 +107,52 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
     _quantityCtrl.text = '${t.quantity}';
     _clientCtrl.text = t.clientName;
     _barcodeCtrl.text = t.barcodeValue ?? '';
+    _tabletsPerStripCtrl.text =
+        t.tabletsPerStrip == null ? '' : '${t.tabletsPerStrip}';
+    _stripsPerPacketCtrl.text =
+        t.stripsPerPacket == null ? '' : '${t.stripsPerPacket}';
     _startDate = t.startDate;
     _endDate = t.endDate;
     _mfgDate = t.manufacturingDate;
     _loadedExisting = true;
+  }
+
+  String? _optionalPositiveInt(String? v) {
+    if (v == null || v.trim().isEmpty) return null;
+    final int? n = int.tryParse(v.trim());
+    if (n == null || n < 1) return 'Must be 1 or more';
+    return null;
+  }
+
+  int? _parsedTabletsPerStrip() => int.tryParse(_tabletsPerStripCtrl.text.trim());
+  int? _parsedStripsPerPacket() => int.tryParse(_stripsPerPacketCtrl.text.trim());
+
+  // Total tablets the user is about to save, based on the entered quantity
+  // and the selected unit. Returns null if inputs are incomplete or the
+  // selected unit needs a pack size that isn't filled in yet.
+  int? _computedTotalTablets() {
+    final int? entered = int.tryParse(_quantityCtrl.text.trim());
+    if (entered == null || entered < 1) return null;
+    switch (_quantityUnit) {
+      case QuantityUnit.tablet:
+        return entered;
+      case QuantityUnit.strip:
+        final int? tps = _parsedTabletsPerStrip();
+        if (tps == null || tps < 1) return null;
+        return entered * tps;
+      case QuantityUnit.packet:
+        final int? tps = _parsedTabletsPerStrip();
+        final int? spp = _parsedStripsPerPacket();
+        if (tps == null || tps < 1 || spp == null || spp < 1) return null;
+        return entered * tps * spp;
+    }
+  }
+
+  String? _quantityPreview() {
+    if (_quantityUnit == QuantityUnit.tablet) return null;
+    final int? total = _computedTotalTablets();
+    if (total == null) return null;
+    return '$total tablets';
   }
 
   Future<void> _scanBarcodeIntoField() async {
@@ -181,16 +233,92 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
                             requiredText(v, field: 'Batch number'),
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _quantityCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Quantity'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(
+                            child: TextFormField(
+                              controller: _tabletsPerStripCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Tablets per strip',
+                                hintText: 'e.g. 10',
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              validator: _optionalPositiveInt,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _stripsPerPacketCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Strips per packet',
+                                hintText: 'e.g. 10 (optional)',
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              validator: _optionalPositiveInt,
+                            ),
+                          ),
                         ],
-                        validator: intMin1,
                       ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(
+                            child: TextFormField(
+                              controller: _quantityCtrl,
+                              decoration:
+                                  const InputDecoration(labelText: 'Quantity'),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              validator: intMin1,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 140,
+                            child: DropdownButtonFormField<QuantityUnit>(
+                              key: ValueKey<QuantityUnit>(_quantityUnit),
+                              initialValue: _quantityUnit,
+                              decoration:
+                                  const InputDecoration(labelText: 'Unit'),
+                              items: const <DropdownMenuItem<QuantityUnit>>[
+                                DropdownMenuItem<QuantityUnit>(
+                                    value: QuantityUnit.tablet,
+                                    child: Text('Tablet')),
+                                DropdownMenuItem<QuantityUnit>(
+                                    value: QuantityUnit.strip,
+                                    child: Text('Strip')),
+                                DropdownMenuItem<QuantityUnit>(
+                                    value: QuantityUnit.packet,
+                                    child: Text('Packet')),
+                              ],
+                              onChanged: (QuantityUnit? v) {
+                                if (v != null) {
+                                  setState(() => _quantityUnit = v);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_quantityPreview() != null) ...<Widget>[
+                        const SizedBox(height: 6),
+                        Text(
+                          '= ${_quantityPreview()}',
+                          style: AppTextStyles.small,
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,6 +563,29 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
       return;
     }
 
+    // Convert the entered quantity into individual tablets (base unit)
+    // based on the selected unit. Strip/Packet need their pack-size fields
+    // filled in, else surface a cross-field error and bail.
+    final int? totalTablets = _computedTotalTablets();
+    if (totalTablets == null) {
+      setState(() {
+        switch (_quantityUnit) {
+          case QuantityUnit.strip:
+            _crossFieldError =
+                'Set "Tablets per strip" to use the Strip unit.';
+            break;
+          case QuantityUnit.packet:
+            _crossFieldError =
+                'Set both "Tablets per strip" and "Strips per packet" to use the Packet unit.';
+            break;
+          case QuantityUnit.tablet:
+            _crossFieldError = 'Enter a quantity of 1 or more.';
+            break;
+        }
+      });
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final repo = ref.read(tabletsRepositoryProvider);
@@ -444,7 +595,9 @@ class _TabletFormScreenState extends ConsumerState<TabletFormScreen> {
         tabletName: _tabletCtrl.text.trim(),
         manufacturer: _manufacturerCtrl.text.trim(),
         batchNumber: _batchCtrl.text.trim(),
-        quantity: int.parse(_quantityCtrl.text.trim()),
+        quantity: totalTablets,
+        tabletsPerStrip: _parsedTabletsPerStrip(),
+        stripsPerPacket: _parsedStripsPerPacket(),
         clientName: _clientCtrl.text.trim(),
         startDate: _startDate!,
         endDate: _endDate!,
