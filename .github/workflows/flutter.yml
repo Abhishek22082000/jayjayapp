@@ -96,6 +96,48 @@ jobs:
             echo "INTERNET permission already present, leaving manifest alone."
           fi
 
+      # mobile_scanner v5 defaults to the unbundled MLKit barcode model,
+      # which Play Services downloads on first use. On devices without
+      # Play Services (emulators, some OEM ROMs) or before the model has
+      # finished downloading, the scanner throws a null-object reference
+      # crash. Force the bundled model so the barcode classifier ships
+      # inside the APK and works the moment the app launches.
+      - name: Bundle MLKit barcode scanner into APK
+        run: |
+          GRADLE_KTS=android/app/build.gradle.kts
+          GRADLE_GROOVY=android/app/build.gradle
+          BUNDLED_DEP_KTS='implementation("com.google.mlkit:barcode-scanning:17.2.0")'
+          BUNDLED_DEP_GROOVY="implementation 'com.google.mlkit:barcode-scanning:17.2.0'"
+
+          if [ -f "$GRADLE_KTS" ]; then
+            if grep -q 'mlkit:barcode-scanning' "$GRADLE_KTS"; then
+              echo "Bundled MLKit barcode dep already present in build.gradle.kts"
+            else
+              cat >> "$GRADLE_KTS" <<EOF
+
+dependencies {
+    $BUNDLED_DEP_KTS
+}
+EOF
+              echo "Appended bundled MLKit barcode dep to build.gradle.kts"
+            fi
+          elif [ -f "$GRADLE_GROOVY" ]; then
+            if grep -q 'mlkit:barcode-scanning' "$GRADLE_GROOVY"; then
+              echo "Bundled MLKit barcode dep already present in build.gradle"
+            else
+              cat >> "$GRADLE_GROOVY" <<EOF
+
+dependencies {
+    $BUNDLED_DEP_GROOVY
+}
+EOF
+              echo "Appended bundled MLKit barcode dep to build.gradle"
+            fi
+          else
+            echo "No android/app/build.gradle(.kts) found — skipping MLKit bundling"
+            exit 1
+          fi
+
       # Generate the Android launcher icon set from assets/logo.png.
       # Skipped silently if the asset hasn't been committed yet — the
       # build then falls back to the default Flutter "F" icon.
